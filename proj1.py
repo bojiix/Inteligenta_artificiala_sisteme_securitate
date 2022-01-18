@@ -21,14 +21,16 @@ class SingleSwitchWithNHostsTopo( Topo ):
       host = self.addHost('h%s' % (h + 1))
       self.addLink(host, switch, bw=1, loss=0)
 
-def generateICMPTraffic(h1, h3):
+def generateICMPTraffic(net):
+  h1 = net.get('h1')
+  h3 = net.get('h3')
   h1_IP = str(h1.IP())
 
   print('Traffic capture incoming...')
 
   h3.cmd('tcpdump -i %s "icmp[0] == 8" -w ./pcap/attack.pcap &' % h3.intfNames()[0])
 
-  print('DOS running...')
+  print('DOS client...')
   h3.cmd('ping %s &' % h1_IP)
 
   time.sleep(10)
@@ -37,11 +39,14 @@ def generateICMPTraffic(h1, h3):
   h3.cmd('killall tcpdump')
   print('Attack traffic captured.')
 
-def runRegularTraffic(h1, h2):
+def runRegularTraffic(net):
+  h1 = net.get('h1')
+  h2 = net.get('h2')
   h1.cmd('iperf -s &')
   h2.cmd('iperf -c 10.0.0.1 -t 100 &')
 
-def runAttackTraffic(h3):
+def runAttackTraffic(net):
+  h3 = net.get('h3')
   print('Commencing attack...')
   h3.cmd('tcpreplay -i %s -t -l 10000 ./pcap/attack.pcap &' % h3.intfNames()[0])
 
@@ -50,7 +55,11 @@ def runAttackTraffic(h3):
   h3.cmd('killall tcpreplay')
   print('End of attack.')
 
-def toggleCapture(h1, h2, h3, stop = False):
+def toggleCapture(net, stop = False):
+  h1 = net.get('h1')
+  h2 = net.get('h2')
+  h3 = net.get('h3')
+  
   if stop == True:
     print('Stop final commands.')
     h1.cmd('killall tcpdump')
@@ -80,13 +89,13 @@ def start():
     print('Weird, empty interface list')
     return
 
-  generateICMPTraffic(h1, h3)
-  toggleCapture(h1, h2, h3)
-  runRegularTraffic(h1, h2)
+  generateICMPTraffic(net)
+  toggleCapture(net)
+  runRegularTraffic(net)
   time.sleep(10)
-  runAttackTraffic(h3)
+  runAttackTraffic(net)
   time.sleep(20)
-  toggleCapture(h1, h2, h3, True)
+  toggleCapture(net, True)
   net.stop()
   print('Net stop!')
 
