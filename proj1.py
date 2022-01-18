@@ -46,6 +46,7 @@ def runRegularTraffic(net):
   h2.cmd('iperf -c 10.0.0.1 -t 100 &')
 
 def runAttackTraffic(net):
+  h1 = net.get('h1')
   h3 = net.get('h3')
   print('Commencing attack...')
   h3.cmd('tcpreplay -i %s -t -l 10000 ./pcap/attack.pcap &' % h3.intfNames()[0])
